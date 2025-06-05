@@ -1,4 +1,4 @@
-# Tech Demo
+# Tech Demo 1
 
 This repository contains a simple tech demo demonstrating an animated bouncing ball using HTML5 Canvas and JavaScript.
 
