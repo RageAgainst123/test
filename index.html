@@ -3,49 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech Demo - Bouncing Ball</title>
+    <title>Arkanoid Demo</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #222; color: #fff; font-family: Arial, sans-serif; }
-        #info { position: absolute; top: 10px; left: 10px; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: monospace;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
     </style>
 </head>
 <body>
 <canvas id="demo"></canvas>
 <div id="info">
-    <h1>Tech Demo: Bouncing Ball</h1>
-    <p>Click anywhere to reposition the ball.</p>
+    <h1>Arkanoid Demo</h1>
+    <p>Move with arrow keys or mouse to hit all bricks.</p>
+    <p id="score">Score: 0</p>
 </div>
 <script>
 const canvas = document.getElementById('demo');
 const ctx = canvas.getContext('2d');
-let width, height;
-let ball = { x: 100, y: 100, vx: 3, vy: 2, radius: 20 };
-function resize() {
+let width = window.innerWidth;
+let height = window.innerHeight;
+canvas.width = width;
+canvas.height = height;
+window.addEventListener('resize', () => {
     width = window.innerWidth;
     height = window.innerHeight;
     canvas.width = width;
     canvas.height = height;
+    paddle.y = height - 30;
+});
+
+const paddle = { width: 80, height: 10, x: width / 2 - 40, y: height - 30, speed: 7 };
+const ball = { x: width / 2, y: height / 2, radius: 6, vx: 4, vy: -4 };
+const rows = 5;
+const cols = 8;
+const brickWidth = 60;
+const brickHeight = 20;
+const brickPadding = 10;
+const bricks = [];
+for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+        const x = c * (brickWidth + brickPadding) + 35;
+        const y = r * (brickHeight + brickPadding) + 50;
+        bricks.push({ x, y, destroyed: false });
+    }
 }
-window.addEventListener('resize', resize);
-resize();
+let leftPressed = false;
+let rightPressed = false;
+let score = 0;
+
+function keyDown(e) {
+    if (e.key === 'ArrowLeft') leftPressed = true;
+    if (e.key === 'ArrowRight') rightPressed = true;
+}
+function keyUp(e) {
+    if (e.key === 'ArrowLeft') leftPressed = false;
+    if (e.key === 'ArrowRight') rightPressed = false;
+}
+
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+
+document.addEventListener('mousemove', (e) => {
+    paddle.x = e.clientX - paddle.width / 2;
+});
 
 function update() {
+    if (leftPressed) paddle.x -= paddle.speed;
+    if (rightPressed) paddle.x += paddle.speed;
+    if (paddle.x < 0) paddle.x = 0;
+    if (paddle.x + paddle.width > width) paddle.x = width - paddle.width;
+
     ball.x += ball.vx;
     ball.y += ball.vy;
+
     if (ball.x - ball.radius < 0 || ball.x + ball.radius > width) {
         ball.vx *= -1;
     }
-    if (ball.y - ball.radius < 0 || ball.y + ball.radius > height) {
+    if (ball.y - ball.radius < 0) {
         ball.vy *= -1;
     }
+    if (ball.y + ball.radius > height) {
+        reset();
+    }
+
+    if (
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.width &&
+        ball.y + ball.radius > paddle.y &&
+        ball.y + ball.radius < paddle.y + paddle.height
+    ) {
+        ball.vy *= -1;
+        ball.y = paddle.y - ball.radius;
+    }
+
+    bricks.forEach(brick => {
+        if (!brick.destroyed &&
+            ball.x > brick.x && ball.x < brick.x + brickWidth &&
+            ball.y - ball.radius < brick.y + brickHeight &&
+            ball.y + ball.radius > brick.y) {
+            ball.vy *= -1;
+            brick.destroyed = true;
+            score += 10;
+            document.getElementById('score').textContent = `Score: ${score}`;
+        }
+    });
 }
 
 function draw() {
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#00adee';
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
     ctx.fill();
+
+    bricks.forEach(brick => {
+        if (!brick.destroyed) {
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(brick.x, brick.y, brickWidth, brickHeight);
+        }
+    });
 }
 
 function loop() {
@@ -53,15 +141,18 @@ function loop() {
     draw();
     requestAnimationFrame(loop);
 }
-canvas.addEventListener('click', (e) => {
-    ball.x = e.clientX;
-    ball.y = e.clientY;
-});
-canvas.addEventListener('touchstart', (e) => {
-    const t = e.touches[0];
-    ball.x = t.clientX;
-    ball.y = t.clientY;
-});
+
+function reset() {
+    ball.x = width / 2;
+    ball.y = height / 2;
+    ball.vx = 4 * (Math.random() > 0.5 ? 1 : -1);
+    ball.vy = -4;
+    paddle.x = width / 2 - paddle.width / 2;
+    score = 0;
+    bricks.forEach(b => b.destroyed = false);
+    document.getElementById('score').textContent = `Score: ${score}`;
+}
+
 loop();
 </script>
 </body>
