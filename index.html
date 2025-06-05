@@ -57,6 +57,11 @@ canvas.addEventListener('click', (e) => {
     ball.x = e.clientX;
     ball.y = e.clientY;
 });
+canvas.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    ball.x = t.clientX;
+    ball.y = t.clientY;
+});
 loop();
 </script>
 </body>
